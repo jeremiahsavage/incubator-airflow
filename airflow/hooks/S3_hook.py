@@ -95,13 +95,14 @@ class S3Hook(BaseHook):
     """
     def __init__(
             self,
-            s3_conn_id='s3_default'):
+            s3_conn_id='s3_default',
+            s3_host='s3-us-east-1.amazonaws.com'):
         self.s3_conn_id = s3_conn_id
+        self.s3_host = s3_host
         self.s3_conn = self.get_connection(s3_conn_id)
         self.extra_params = self.s3_conn.extra_dejson
         self.profile = self.extra_params.get('profile')
         self.calling_format = None
-        self.s3_host = None
         self._creds_in_conn = 'aws_secret_access_key' in self.extra_params
         self._creds_in_config_file = 's3_config_file' in self.extra_params
         self._default_to_boto = False
@@ -160,7 +161,7 @@ class S3Hook(BaseHook):
         Returns the boto S3Connection object.
         """
         if self._default_to_boto:
-            return S3Connection(profile_name=self.profile)
+            return S3Connection(profile_name=self.profile, host=self.s3_host)
         a_key = s_key = None
         if self._creds_in_config_file:
             a_key, s_key, calling_format = _parse_s3_config(self.s3_config_file,

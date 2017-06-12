@@ -503,6 +503,7 @@ class S3KeySensor(BaseSensorOperator):
             bucket_name=None,
             wildcard_match=False,
             s3_conn_id='s3_default',
+            s3_host='s3-us-east-1.amazonaws.com',
             *args, **kwargs):
         super(S3KeySensor, self).__init__(*args, **kwargs)
         # Parse
@@ -520,10 +521,11 @@ class S3KeySensor(BaseSensorOperator):
         self.bucket_key = bucket_key
         self.wildcard_match = wildcard_match
         self.s3_conn_id = s3_conn_id
+        self.s3_host = s3_host
 
     def poke(self, context):
         from airflow.hooks.S3_hook import S3Hook
-        hook = S3Hook(s3_conn_id=self.s3_conn_id)
+        hook = S3Hook(s3_conn_id=self.s3_conn_id, s3_host=self.s3_host)
         full_url = "s3://" + self.bucket_name + "/" + self.bucket_key
         logging.info('Poking for key : {full_url}'.format(**locals()))
         if self.wildcard_match:

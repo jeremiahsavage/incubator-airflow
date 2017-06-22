@@ -290,9 +290,10 @@ class S3Hook(BaseHook):
         """
         Checks that a key matching a wildcard expression exists in a bucket
         """
-        return self.get_wildcard_key(wildcard_key=wildcard_key,
-                                     bucket_name=bucket_name,
-                                     delimiter=delimiter) is not None
+        result = self.get_wildcard_key(wildcard_key=wildcard_key,
+                                       bucket_name=bucket_name,
+                                       delimiter=delimiter)
+        return result if result is not None else None
 
     def get_wildcard_key(self, wildcard_key, bucket_name=None, delimiter=''):
         """
@@ -311,7 +312,9 @@ class S3Hook(BaseHook):
         if not klist:
             return None
         key_matches = [k for k in klist if fnmatch.fnmatch(k, wildcard_key)]
-        return bucket.get_key(key_matches[0]) if key_matches else None
+        key_matches_sorted = sorted(key_matches)
+        result = bucket.get_key(key_matches_sorted[-1]) if key_matches else None
+        return result
 
     def check_for_prefix(self, bucket_name, prefix, delimiter):
         """

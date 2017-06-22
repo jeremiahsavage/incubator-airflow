@@ -40,11 +40,7 @@ class S3FileTransformOperator(BaseOperator):
     :type source_s3_key: str
     :param source_s3_conn_id: source s3 connection
     :type source_s3_conn_id: str
-    :param dest_s3_key: The key to be written from S3
-    :type dest_s3_key: str
-    :param dest_s3_conn_id: destination s3 connection
-    :type dest_s3_conn_id: str
-    :param replace: Replace dest S3 key if it already exists
+    :param replace: Remove source S3 key
     :type replace: bool
     :param transform_script: location of the executable transformation script
     :type transform_script: str
@@ -57,55 +53,61 @@ class S3FileTransformOperator(BaseOperator):
     @apply_defaults
     def __init__(
             self,
-            source_s3_key,
-            dest_s3_key,
-            transform_script,
+            #transform_script,
+            remove=False,
             source_s3_conn_id='s3_default',
-            dest_s3_conn_id='s3_default',
-            replace=False,
+            source_s3_host='s3-us-east-1.amazonaws.com',
+            source_s3_key = None,
+            xcom_task_id=None,
             *args, **kwargs):
         super(S3FileTransformOperator, self).__init__(*args, **kwargs)
-        self.source_s3_key = source_s3_key
+        
+        self.remove = remove
         self.source_s3_conn_id = source_s3_conn_id
-        self.dest_s3_key = dest_s3_key
-        self.dest_s3_conn_id = dest_s3_conn_id
-        self.replace = replace
-        self.transform_script = transform_script
+        self.source_s3_host = source_s3_host
+        self.source_s3_key = source_s3_key
+        self.xcom_task_id = xcom_task_id
 
     def execute(self, context):
-        source_s3 = S3Hook(s3_conn_id=self.source_s3_conn_id)
-        dest_s3 = S3Hook(s3_conn_id=self.dest_s3_conn_id)
-        logging.info("Downloading source S3 file {0}"
-                     "".format(self.source_s3_key))
-        if not source_s3.check_for_key(self.source_s3_key):
-            raise AirflowException("The source key {0} does not exist"
-                            "".format(self.source_s3_key))
-        source_s3_key_object = source_s3.get_key(self.source_s3_key)
-        with NamedTemporaryFile("w") as f_source, NamedTemporaryFile("w") as f_dest:
-            logging.info("Dumping S3 file {0} contents to local file {1}"
-                         "".format(self.source_s3_key, f_source.name))
-            source_s3_key_object.get_contents_to_file(f_source)
-            f_source.flush()
-            source_s3.connection.close()
-            transform_script_process = subprocess.Popen(
-                [self.transform_script, f_source.name, f_dest.name],
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            (transform_script_stdoutdata, transform_script_stderrdata) = transform_script_process.communicate()
-            logging.info("Transform script stdout "
-                         "" + transform_script_stdoutdata)
-            if transform_script_process.returncode > 0:
-                raise AirflowException("Transform script failed "
-                                "" + transform_script_stderrdata)
-            else:
-                logging.info("Transform script successful."
-                             "Output temporarily located at {0}"
-                             "".format(f_dest.name))
-            logging.info("Uploading transformed file to S3")
-            f_dest.flush()
-            dest_s3.load_file(
-                filename=f_dest.name,
-                key=self.dest_s3_key,
-                replace=self.replace
-            )
-            logging.info("Upload successful")
-            dest_s3.connection.close()
+        logging.info('context=%s' % context)
+        # if self.xcom_task_id is not None:
+        #     logging.info('context=%s' context)
+            #context.update(self.
+        # source_s3 = S3Hook(s3_conn_id=self.source_s3_conn_id, s3_host=self.s3_host)
+        # logging.info("Downloading source S3 file {0}"
+        #              "".format(self.source_s3_key))
+        # source_bucket = source_s3.get_bucket(self.bucket_name)
+        # source_s3_key_object = source_bucket.get_key(self.source_s3_key)
+        # if not source_s3.check_for_key(self.source_s3_key):
+        #     raise AirflowException("The source key {0} does not exist"
+        #                     "".format(self.source_s3_key))
+        # source_s3_key_object = source_s3.get_key(self.source_s3_key)
+        # with NamedTemporaryFile("w") as f_source, NamedTemporaryFile("w") as f_dest:
+        #     logging.info("Dumping S3 file {0} contents to local file {1}"
+        #                  "".format(self.source_s3_key, f_source.name))
+        #     source_s3_key_object.get_contents_to_file(f_source)
+        #     f_source.flush()
+        #     source_s3.connection.close()
+        #     # transform_script_process = subprocess.Popen(
+        #     #     [self.transform_script, f_source.name, f_dest.name],
+        #     #     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        #     # (transform_script_stdoutdata, transform_script_stderrdata) = transform_script_process.communicate()
+        #     # logging.info("Transform script stdout "
+        #     #              "" + transform_script_stdoutdata)
+        #     # if transform_script_process.returncode > 0:
+        #     #     raise AirflowException("Transform script failed "
+        #     #                     "" + transform_script_stderrdata)
+        #     # else:
+        #     #     logging.info("Transform script successful."
+        #     #                  "Output temporarily located at {0}"
+        #     #                  "".format(f_dest.name))
+
+        #     # logging.info("Uploading transformed file to S3")
+        #     # f_dest.flush()
+        #     # dest_s3.load_file(
+        #     #     filename=f_dest.name,
+        #     #     key=self.dest_s3_key,
+        #     #     replace=self.replace
+        #     # )
+        #     # logging.info("Upload successful")
+        #     # dest_s3.connection.close()

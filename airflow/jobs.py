@@ -903,7 +903,7 @@ class SchedulerJob(BaseJob):
                 # future: remove adhoc
                 if task.adhoc:
                     continue
-
+                self.logger.info('task=%s' % task)
                 if ti.are_dependencies_met(
                         dep_context=DepContext(flag_upstream_failed=True),
                         session=session):
@@ -1600,6 +1600,7 @@ class SchedulerJob(BaseJob):
             # TODO(aoen): It's not great that we have to check all the task instance
             # dependencies twice; once to get the task scheduled, and again to actually
             # run the task. We should try to come up with a way to only check them once.
+            self.logger.info('ti=%s' % ti)
             if ti.are_dependencies_met(
                     dep_context=dep_context,
                     session=session,
@@ -1904,6 +1905,7 @@ class BackfillJob(BaseJob):
 
                     # Is the task runnable? -- then run it
                     # the dependency checker can change states of tis
+                    self.logger.info('ti=%s' % ti)
                     if ti.are_dependencies_met(
                             dep_context=backfill_context,
                             session=session,

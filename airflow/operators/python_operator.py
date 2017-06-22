@@ -76,6 +76,8 @@ class PythonOperator(BaseOperator):
 
     def execute(self, context):
         if self.provide_context:
+            logging.info('self.op_kwargs=%s' % self.op_kwargs)
+            logging.info('self.templates_dict=%s' % self.templates_dict)
             context.update(self.op_kwargs)
             context['templates_dict'] = self.templates_dict
             self.op_kwargs = context

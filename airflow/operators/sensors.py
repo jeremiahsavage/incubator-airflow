@@ -73,14 +73,18 @@ class BaseSensorOperator(BaseOperator):
 
     def execute(self, context):
         started_at = datetime.now()
+        logging.info('started_at=%s' % started_at)
         while not self.poke(context):
+            logging.info('enter while: context=%s' % context)
             if (datetime.now() - started_at).total_seconds() > self.timeout:
                 if self.soft_fail:
                     raise AirflowSkipException('Snap. Time is OUT.')
                 else:
                     raise AirflowSensorTimeout('Snap. Time is OUT.')
+            logging.info('self.poke_interval=%s' % self.poke_interval)
             sleep(self.poke_interval)
         logging.info("Success criteria met. Exiting.")
+        logging.info(self.poke(context))
 
 
 class SqlSensor(BaseSensorOperator):
@@ -529,8 +533,17 @@ class S3KeySensor(BaseSensorOperator):
         full_url = "s3://" + self.bucket_name + "/" + self.bucket_key
         logging.info('Poking for key : {full_url}'.format(**locals()))
         if self.wildcard_match:
-            return hook.check_for_wildcard_key(self.bucket_key,
-                                               self.bucket_name)
+            result = hook.check_for_wildcard_key(self.bucket_key,
+                                                 self.bucket_name)
+            # logging.info('result=%s' % result)
+            # logging.info('type(result)=%s' % type(result))
+            from pprint import pprint
+            logging.info(pprint(vars(result)))
+            context['ti'].xcom_push(key='s3_bucket',value=self.bucket_name)
+            context['ti'].xcom_push(key='s3_conn_id',value=self.s3_conn_id)
+            context['ti'].xcom_push(key='s3_host',value=self.s3_host)
+            context['ti'].xcom_push(key='s3_key',value=result.name)
+            return result
         else:
             return hook.check_for_key(self.bucket_key, self.bucket_name)
 

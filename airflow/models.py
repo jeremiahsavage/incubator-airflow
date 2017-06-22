@@ -1072,7 +1072,8 @@ class TaskInstance(Base):
         if the task DROPs and recreates a table.
         """
         task = self.task
-
+        logging.info('calling: %s' % inspect.stack()[1][3])
+        logging.info('task=%s' % task)
         if not task.downstream_task_ids:
             return True
 
@@ -1134,6 +1135,11 @@ class TaskInstance(Base):
         :param verbose: whether or not to print details on failed dependencies
         :type verbose: boolean
         """
+        logging.info('calling: %s' % inspect.stack()[1][3])
+        func = inspect.currentframe().f_back.f_code
+        logging.info('\t%s\n\t%s\n\t%s' % (func.co_name, 
+                                           func.co_filename, 
+                                           func.co_firstlineno))
         dep_context = dep_context or DepContext()
         failed = False
         for dep_status in self.get_failed_dep_statuses(
@@ -1299,6 +1305,7 @@ class TaskInstance(Base):
             ignore_ti_state=ignore_ti_state,
             ignore_depends_on_past=ignore_depends_on_past,
             ignore_task_deps=ignore_task_deps)
+        logging.info('queue_dep_context=%s' % queue_dep_context)
         if not self.are_dependencies_met(
                 dep_context=queue_dep_context,
                 session=session,
@@ -1322,6 +1329,7 @@ class TaskInstance(Base):
             ignore_depends_on_past=ignore_depends_on_past,
             ignore_task_deps=ignore_task_deps,
             ignore_ti_state=ignore_ti_state)
+        logging.info('dep_context=%s' % dep_context)
         runnable = self.are_dependencies_met(
             dep_context=dep_context,
             session=session,
@@ -4216,6 +4224,7 @@ class DagRun(Base):
         none_depends_on_past = all(not t.task.depends_on_past for t in unfinished_tasks)
         # small speed up
         if unfinished_tasks and none_depends_on_past:
+            logging.info('unfinished_tasks and none_depends_on_past')
             # todo: this can actually get pretty slow: one task costs between 0.01-015s
             no_dependencies_met = all(
                 # Use a special dependency context that ignores task's up for retry
